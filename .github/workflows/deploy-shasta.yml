@@ -1,5 +1,5 @@
 
-name: Test TetherToken on Shasta
+name: Compile and Deploy TetherToken to Shasta
 
 on:
   workflow_dispatch:
@@ -26,5 +26,5 @@ jobs:
       - name: Compile contracts
         run: npx tronbox compile --compile-all
 
-      - name: Deploy TetherToken to Shasta
-        run: npx tronbox migrate --network shasta
+      - name: Deploy TetherToken only
+        run: npx tronbox migrate --network shasta --f 3
