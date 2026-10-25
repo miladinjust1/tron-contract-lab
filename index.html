@@ -1,0 +1,145 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>انتقال توکن TTK</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:20px;background:#f1f5f9;color:#172033;font-family:Tahoma,Arial,sans-serif}
+.card{max-width:440px;margin:30px auto;padding:24px;background:white;border-radius:18px;box-shadow:0 8px 30px #00000012}
+h2{text-align:center}
+.note{background:#fff7df;border-radius:10px;padding:12px;font-size:13px;line-height:2}
+label{display:block;margin:18px 0 8px}
+input{width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:10px;font-size:15px;direction:ltr;text-align:left}
+button{width:100%;padding:14px;margin-top:14px;border:0;border-radius:10px;background:#1769e0;color:white;font-size:16px}
+button:disabled{opacity:.5}
+#status{margin-top:18px;padding:12px;background:#f1f5f9;border-radius:10px;overflow-wrap:anywhere;font-size:13px;line-height:1.9}
+.small{font-size:12px;color:#64748b;line-height:1.8}
+</style>
+</head>
+<body>
+<main class="card">
+<h2>انتقال توکن TTK</h2>
+<div class="note">
+شبکه: <b>Shasta Testnet</b><br>
+نام توکن: <b>Test Token</b><br>
+نماد: <b>TTK</b><br>
+این توکن آزمایشی است و تتر واقعی نیست.
+</div>
+<button id="connectButton">اتصال به TronLink</button>
+<p class="small" id="walletInfo">کیف پول متصل نشده است.</p>
+<label for="recipientAddress">آدرس کیف پول مقصد</label>
+<input id="recipientAddress" placeholder="آدرس T..." autocomplete="off">
+<label for="tokenAmount">مقدار توکن TTK</label>
+<input id="tokenAmount" type="number" min="0.000001" step="0.000001" placeholder="مثلاً 25">
+<button id="sendButton" disabled>انتقال توکن</button>
+<div id="status">ابتدا کیف پول را متصل کن.</div>
+<p class="small">برای کارمزد شبکه به TRX آزمایشی نیاز داری. قبل از تأیید، آدرس مقصد و مقدار را بررسی کن.</p>
+</main>
+<script>
+const TOKEN_ADDRESS = "TEK2MJJB94PqrmWPNkRJHAEzcCMkXVw7mm";
+const TOKEN_DECIMALS = 6;
+
+const connectButton = document.getElementById("connectButton");
+const sendButton = document.getElementById("sendButton");
+const walletInfo = document.getElementById("walletInfo");
+const statusBox = document.getElementById("status");
+const recipientInput = document.getElementById("recipientAddress");
+const amountInput = document.getElementById("tokenAmount");
+
+let tronWeb = null;
+let walletAddress = null;
+
+function showStatus(message) {
+  statusBox.textContent = message;
+}
+
+function convertToTokenUnits(amountText) {
+  if (!/^\d+(\.\d{1,6})?$/.test(amountText)) {
+    throw new Error("مقدار را درست وارد کن؛ حداکثر ۶ رقم اعشار مجاز است.");
+  }
+  const parts = amountText.split(".");
+  const wholePart = parts[0];
+  const decimalPart = (parts[1] || "").padEnd(TOKEN_DECIMALS, "0");
+  return BigInt(wholePart + decimalPart);
+}
+
+async function connectWallet() {
+  connectButton.disabled = true;
+  try {
+    showStatus("در حال اتصال به TronLink...");
+    if (!window.tronLink) {
+      throw new Error("TronLink پیدا نشد. صفحه را در مرورگر پشتیبانی‌شده باز کن.");
+    }
+    await window.tronLink.request({method: "tron_requestAccounts"});
+    tronWeb = window.tronWeb;
+
+    if (!tronWeb || !tronWeb.ready) {
+      throw new Error("TronLink آماده نیست. دوباره تلاش کن.");
+    }
+
+    walletAddress = tronWeb.defaultAddress.base58;
+    if (!walletAddress) throw new Error("آدرس کیف پول دریافت نشد.");
+
+    walletInfo.textContent = "کیف پول متصل: " + walletAddress;
+    walletInfo.style.direction = "ltr";
+    walletInfo.style.textAlign = "left";
+    sendButton.disabled = false;
+    showStatus("اتصال برقرار شد. آدرس مقصد و مقدار توکن را وارد کن.");
+  } catch (error) {
+    showStatus("خطا در اتصال: " + (error.message || String(error)));
+  } finally {
+    connectButton.disabled = false;
+  }
+}
+
+async function sendTokens() {
+  sendButton.disabled = true;
+  try {
+    tronWeb = window.tronWeb;
+    if (!tronWeb || !tronWeb.ready || !walletAddress) {
+      throw new Error("ابتدا کیف پول را متصل کن.");
+    }
+
+    const recipientAddress = recipientInput.value.trim();
+    const amountText = amountInput.value.trim();
+
+    if (!tronWeb.isAddress(recipientAddress)) {
+      throw new Error("آدرس کیف پول مقصد معتبر نیست.");
+    }
+    if (recipientAddress === walletAddress) {
+      throw new Error("آدرس مقصد با آدرس فرستنده یکسان است.");
+    }
+
+    const tokenUnits = convertToTokenUnits(amountText);
+    if (tokenUnits <= 0n) throw new Error("مقدار باید بیشتر از صفر باشد.");
+
+    showStatus("در حال بررسی موجودی توکن...");
+    const tokenContract = await tronWeb.contract().at(TOKEN_ADDRESS);
+    const rawBalance = await tokenContract.balanceOf(walletAddress).call();
+    const tokenBalance = BigInt(rawBalance.toString());
+
+    if (tokenBalance < tokenUnits) {
+      throw new Error("موجودی توکن TTK کافی نیست.");
+    }
+
+    showStatus("درخواست انتقال آماده است. جزئیات را در TronLink بررسی کن.");
+    const transactionId = await tokenContract.transfer(
+      recipientAddress, tokenUnits.toString()
+    ).send({feeLimit: 100000000});
+
+    showStatus("درخواست انتقال ارسال شد. شناسه تراکنش: " + transactionId);
+  } catch (error) {
+    showStatus("انتقال انجام نشد: " + (error.message || String(error)));
+  } finally {
+    sendButton.disabled = false;
+  }
+}
+
+connectButton.addEventListener("click", connectWallet);
+sendButton.addEventListener("click", sendTokens);
+</script>
+</body>
+</html>
