@@ -26,7 +26,8 @@ jobs:
       - name: Verify deployment wallet
         run: |
           node -e '
-          const TronWeb = require("tronweb");
+          const mod = require("tronweb");
+          const TronWeb = mod.TronWeb || mod.default?.TronWeb || mod.default || mod;
           const key = process.env.SHASTA_PRIVATE_KEY;
           const expected = process.env.EXPECTED_WALLET;
 
