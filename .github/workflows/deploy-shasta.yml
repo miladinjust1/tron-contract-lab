@@ -1,52 +1,58 @@
 name: Compile and Deploy TetherToken to Shasta
-on: workflow_dispatch:
-jobs: deploy: runs-on: ubuntu-latest
-env:
-  SHASTA_PRIVATE_KEY: ${{ secrets.SHASTA_PRIVATE_KEY }}
-  EXPECTED_WALLET: TQWPmDMDp2YBNEXK7oTM24Muk2rjg1byUn
 
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
+on:
+  workflow_dispatch:
 
-  - name: Setup Node.js
-    uses: actions/setup-node@v4
-    with:
-      node-version: '20'
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-  - name: Install dependencies
-    run: npm install
+    env:
+      SHASTA_PRIVATE_KEY: ${{ secrets.SHASTA_PRIVATE_KEY }}
+      EXPECTED_WALLET: TQWPmDMDp2YBNEXK7oTM24Muk2rjg1byUn
 
-  - name: Verify deployment wallet
-    run: |
-      node -e '
-      const TronWeb = require("tronweb");
-      const key = process.env.SHASTA_PRIVATE_KEY;
-      const expected = process.env.EXPECTED_WALLET;
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      if (!key) {
-        console.error("SHASTA_PRIVATE_KEY is missing");
-        process.exit(1);
-      }
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      const tronWeb = new TronWeb({
-        fullHost: "https://api.shasta.trongrid.io",
-        privateKey: key
-      });
+      - name: Install dependencies
+        run: npm install
 
-      const actual = tronWeb.address.fromPrivateKey(key);
-      console.log("Deployment wallet:", actual);
+      - name: Verify deployment wallet
+        run: |
+          node -e '
+          const TronWeb = require("tronweb");
+          const key = process.env.SHASTA_PRIVATE_KEY;
+          const expected = process.env.EXPECTED_WALLET;
 
-      if (actual !== expected) {
-        console.error("Wallet mismatch. Deployment stopped.");
-        process.exit(1);
-      }
+          if (!key) {
+            console.error("SHASTA_PRIVATE_KEY is missing");
+            process.exit(1);
+          }
 
-      console.log("Wallet verified.");
-      '
+          const tronWeb = new TronWeb({
+            fullHost: "https://api.shasta.trongrid.io",
+            privateKey: key
+          });
 
-  - name: Compile contracts
-    run: npx tronbox compile --compile-all
+          const actual = tronWeb.address.fromPrivateKey(key);
+          console.log("Deployment wallet:", actual);
 
-  - name: Deploy TetherToken only
-    run: npx tronbox migrate --network shasta --f 3
+          if (actual !== expected) {
+            console.error("Wallet mismatch. Deployment stopped.");
+            process.exit(1);
+          }
+
+          console.log("Wallet verified.");
+          '
+
+      - name: Compile contracts
+        run: npx tronbox compile --compile-all
+
+      - name: Deploy TetherToken only
+        run: npx tronbox migrate --network shasta --f 3
