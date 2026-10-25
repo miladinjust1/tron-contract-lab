@@ -1,3 +1,4 @@
+
 const TetherToken = artifacts.require("TetherToken");
 
 module.exports = function (deployer) {
