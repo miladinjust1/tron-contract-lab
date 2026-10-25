@@ -18,7 +18,7 @@ module.exports = {
     shasta: {
       fullHost: 'https://api.shasta.trongrid.io',
       privateKey: process.env.SHASTA_PRIVATE_KEY,
-      network_id: '*'
+      network_id: '2'
     }
   }
 };
