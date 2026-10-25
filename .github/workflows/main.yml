@@ -1,0 +1,30 @@
+
+name: Compile Solidity Contracts
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'contracts/**'
+      - 'tronbox.js'
+      - 'package.json'
+      - '.github/workflows/main.yml'
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Compile contracts
+        run: npx tronbox compile
