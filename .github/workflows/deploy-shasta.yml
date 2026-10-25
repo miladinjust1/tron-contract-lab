@@ -1,0 +1,30 @@
+
+name: Deploy TestToken to Shasta
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      SHASTA_PRIVATE_KEY: ${{ secrets.SHASTA_PRIVATE_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Compile contracts
+        run: npx tronbox compile --compile-all
+
+      - name: Deploy to Shasta testnet
+        run: npx tronbox migrate --network shasta
