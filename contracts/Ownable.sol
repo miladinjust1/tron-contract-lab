@@ -10,9 +10,7 @@ contract Ownable {
     );
 
     function Ownable() public {
-        owner = address(
-            0x9f77a38c4bad34c67f2a2e03ece7edccf881b08d
-        );
+        owner = msg.sender;
         OwnershipTransferred(address(0), owner);
     }
 
